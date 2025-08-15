@@ -52,7 +52,7 @@
 //           preload="auto"
 //         />
 //         {/* Dark overlay */}
-//         {/* <div className="absolute inset-0 bg-black/30"></div> */}
+//         <div className="absolute inset-0 bg-black/30"></div>
         
 //         {/* Skip button */}
 //         {!showSignup && (
@@ -74,7 +74,6 @@
 // }
 
 
-
 // app/page.tsx
 'use client';
 import { useEffect, useRef, useState } from 'react';
@@ -83,19 +82,13 @@ import Signup from './signup/page';
 export default function Home() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [showSignup, setShowSignup] = useState(false);
-  const [hasInteracted, setHasInteracted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const loopCountRef = useRef(0);
 
-  // Handle video playback with user interaction
-  const handleUserInteraction = () => {
-    setHasInteracted(true);
-    const video = videoRef.current;
-    if (video) {
-      video.play().catch(e => console.log('Playback failed:', e));
-    }
-  };
-
   useEffect(() => {
+    // Check if mobile device
+    setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+    
     const video = videoRef.current;
     if (!video) return;
 
@@ -111,65 +104,49 @@ export default function Home() {
       }
     };
 
-    video.addEventListener('ended', handleVideoEnd);
-
-    // Try autoplay for desktop browsers
-    if (!isMobile()) {
+    const handleCanPlay = () => {
       video.play().catch(e => console.log('Autoplay blocked:', e));
-    }
+    };
+
+    video.addEventListener('ended', handleVideoEnd);
+    video.addEventListener('canplay', handleCanPlay);
+    video.load();
 
     return () => {
       video.removeEventListener('ended', handleVideoEnd);
+      video.removeEventListener('canplay', handleCanPlay);
     };
-  }, [hasInteracted]);
-
-  // Helper function to detect mobile devices
-  const isMobile = () => {
-    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  };
+  }, []);
 
   return (
-    <main 
-      className="relative h-screen w-full overflow-hidden"
-      onClick={handleUserInteraction} // Capture any click to start playback
-    >
-      {/* Video Background */}
+    <main className="relative h-[100dvh] w-full overflow-hidden">
+      {/* Video Background - Fixed for Chrome mobile */}
       <div className={`absolute inset-0 transition-all duration-500 ${showSignup ? 'opacity-0 scale-110' : 'opacity-100 scale-100'}`}>
-        <video
-          ref={videoRef}
-          src="/complete3.mp4"
-          autoPlay
-          muted
-          playsInline
-          className="w-full h-full object-fill object-center"
-          preload="auto"
-          poster="/video-poster.jpg" // Add a poster image
-        />
-        
-        {/* Play button overlay for mobile */}
-        {!hasInteracted && isMobile() && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10">
+        <div className="relative w-full h-full">
+          <video
+            ref={videoRef}
+            src="/complete3.mp4"
+            autoPlay
+            muted
+            playsInline
+            className="absolute top-0 left-0 w-full h-full object-center object-fill"
+            preload="auto"
+            disablePictureInPicture
+            disableRemotePlayback
+          />
+          
+          {/* Skip button */}
+          {!showSignup && (
             <button 
-              onClick={handleUserInteraction}
-              className="px-8 py-4 bg-white/90 text-black rounded-full text-lg font-bold flex items-center gap-2"
+              onClick={() => setShowSignup(true)}
+              className={`absolute ${
+                isMobile ? 'bottom-4 right-4 text-sm' : 'bottom-8 right-8'
+              } z-20 px-4 py-2 bg-white/20 text-white rounded-lg backdrop-blur-sm hover:bg-white/30 transition`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-              </svg>
-              Play Video
+              Skip Intro
             </button>
-          </div>
-        )}
-
-        {/* Skip button */}
-        {hasInteracted && !showSignup && (
-          <button 
-            onClick={() => setShowSignup(true)}
-            className="absolute bottom-8 right-8 z-20 px-4 py-2 bg-white/20 text-white rounded-lg backdrop-blur-sm hover:bg-white/30 transition"
-          >
-            Skip Intro
-          </button>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Signup Page */}

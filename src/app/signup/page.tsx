@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 
-export default function signup() {
+export default function Signup() {
   const [isZoomed, setIsZoomed] = useState(false);
   const [formData, setFormData] = useState({
     name: '',

@@ -1,100 +1,73 @@
+// app/page.tsx
 'use client';
-
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import { useEffect, useRef, useState } from 'react';
+import Signup from './signup/page'; // Import your signup component
 
 export default function Home() {
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: ''
-  });
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [showSignup, setShowSignup] = useState(false);
+  const loopCountRef = useRef(0);
 
   useEffect(() => {
-    setIsZoomed(true);
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleVideoEnd = () => {
+      loopCountRef.current += 1;
+      
+      if (loopCountRef.current >= 2) {
+        video.pause();
+        setShowSignup(true);
+      } else {
+        video.currentTime = 0;
+        video.play().catch(e => console.log('Video replay failed:', e));
+      }
+    };
+
+    const handleCanPlay = () => {
+      video.play().catch(e => console.log('Autoplay blocked:', e));
+    };
+
+    video.addEventListener('ended', handleVideoEnd);
+    video.addEventListener('canplay', handleCanPlay);
+    video.load();
+
+    return () => {
+      video.removeEventListener('ended', handleVideoEnd);
+      video.removeEventListener('canplay', handleCanPlay);
+    };
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Form submitted:', formData);
-  };
-
   return (
-    <main className="relative min-h-screen w-full overflow-x-hidden">
-      {/* Combined background and form container with zoom effect */}
-      <div className={`fixed inset-0 w-full h-full transform transition-all duration-500 ease-in-out ${
-        isZoomed ? "scale-100 opacity-100" : "scale-50 opacity-0"
-      }`}>
-        {/* Background Image */}
-        <div className="absolute inset-0 -z-10">
-          <Image
-            src="/complete3.jpg"
-            alt="Background"
-            className="block w-full h-full object-center object-fill"
-            fill
-            priority
-          />
-        </div>
+    <main className="relative h-screen w-full overflow-hidden">
+      {/* Video Background */}
+      <div className={`absolute inset-0 transition-all duration-500 ${showSignup ? 'opacity-0 scale-110' : 'opacity-100 scale-100'}`}>
+        <video
+          ref={videoRef}
+          src="/complete3.mp4"
+          autoPlay
+          muted
+          playsInline
+          className="w-full h-full object-fill object-center"
+          preload="auto"
+        />
+        {/* Dark overlay */}
+        {/* <div className="absolute inset-0 bg-black/30"></div> */}
+        
+        {/* Skip button */}
+        {!showSignup && (
+          <button 
+            onClick={() => setShowSignup(true)}
+            className="absolute bottom-8 right-8 z-20 px-4 py-2 bg-white/20 text-white rounded-lg backdrop-blur-sm hover:bg-white/30 transition"
+          >
+            Skip Intro
+          </button>
+        )}
+      </div>
 
-        {/* Form Overlay */}
-        <div className="relative z-10 flex items-center justify-center min-h-screen p-4">
-          <div className="bg-blue-00 p-8 rounded-lg shadow-lg max-w-md md:max-w-2xl w-full mx-auto bg-opacity-20 backdrop-filter backdrop-blur-xl">
-            <h2 className="text-2xl font-bold text-center mb-6">Sign Up</h2>
-            <form onSubmit={handleSubmit}>
-              <div className="mb-4">
-                <label htmlFor="name" className="block text-gray-900 mb-2">Name</label>
-                <input
-                  type="text"
-                  id="name"
-                  name="name"
-                  value={formData.name}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div className="mb-4">
-                <label htmlFor="email" className="block text-gray-900 mb-2">Email</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <div className="mb-6">
-                <label htmlFor="password" className="block text-gray-900 mb-2">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition duration-200"
-              >
-                Sign Up
-              </button>
-            </form>
-          </div>
-        </div>
+      {/* Signup Page - Shows after 2 video loops */}
+      <div className={`absolute inset-0 transition-opacity duration-500 ${showSignup ? 'opacity-100 z-10' : 'opacity-0 -z-10'}`}>
+        <Signup /> {/* Your actual signup component */}
       </div>
     </main>
   );
